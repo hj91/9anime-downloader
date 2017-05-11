@@ -173,7 +173,7 @@ def download_episode(data, tries = 5):
 	download_episode.lock.acquire()
 	while download_episode.last_attempt > time.time() - 1:
 		download_episode.lock.release()
-		time.sleep(random.randint(1, tries))
+		time.sleep(random.randint(1, 6 - tries))
 		download_episode.lock.acquire()
 	download_episode.last_attempt = time.time()
 	download_episode.lock.release()
