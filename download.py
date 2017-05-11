@@ -39,6 +39,7 @@ from functools import cmp_to_key, partial
 import multiprocessing.pool
 import threading
 import time
+import random
 
 def cmp(a, b): return (a > b) - (a < b)
 
@@ -172,7 +173,7 @@ def download_episode(data, tries = 5):
 	download_episode.lock.acquire()
 	while download_episode.last_attempt > time.time() - 1:
 		download_episode.lock.release()
-		time.sleep(1)
+		time.sleep(random.randint(1, tries))
 		download_episode.lock.acquire()
 	download_episode.last_attempt = time.time()
 	download_episode.lock.release()
