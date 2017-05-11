@@ -167,13 +167,14 @@ def download_episode(data, tries = 10):
 	if tries == 0:
 		_downloads[index]['finished'] = True
 		_downloads[index]['failed'] = True
+		_downloads[index]['reason'] = 'Maximum number of attempts reached.'
 		return
 
 	# Wait for an opportunity to download.
 	download_episode.lock.acquire()
 	while download_episode.last_attempt > time.time() - 1:
 		download_episode.lock.release()
-		time.sleep(random.randint(1, 6 - tries))
+		time.sleep(random.randint(1, 11 - tries))
 		download_episode.lock.acquire()
 	download_episode.last_attempt = time.time()
 	download_episode.lock.release()
@@ -187,20 +188,28 @@ def download_episode(data, tries = 10):
 
 		# Download the file.
 		with open(destination, 'wb') as f:
-			# Get the total length.
 			response = requests.get(link, stream = True)
-			total_length = response.headers.get('content-length')
-			total_length = int(total_length)
-			_downloads[index]['total'] = total_length
 
-			# Download.
-			dl = 0
-			for chunk in response.iter_content(chunk_size = 8 * 1024):
-				f.write(chunk)
+			# Make sure the file exists.
+			if response.status_code == 200:
+				# Get the total length.
+				total_length = response.headers.get('content-length')
+				total_length = int(total_length)
+				_downloads[index]['total'] = total_length
 
-				# Update the progress.
-				dl += len(chunk)
-				_downloads[index]['dl'] = dl
+				# Download.
+				dl = 0
+				for chunk in response.iter_content(chunk_size = 8 * 1024):
+					f.write(chunk)
+
+					# Update the progress.
+					dl += len(chunk)
+					_downloads[index]['dl'] = dl
+			else:
+				# Failed.
+				total_length = 0
+				_downloads[index]['failed'] = True
+				_downloads[index]['reason'] = 'File not found. Try a different server.'
 
 		# Download finished.
 		_downloads[index]['dl'] = total_length
@@ -268,7 +277,8 @@ if __name__ == '__main__':
 			'failed': False,
 			'quality': '',
 			'source': '',
-			'destination': os.path.join(dest, pref + e['name'] + '.mp4')
+			'destination': os.path.join(dest, pref + e['name'] + '.mp4'),
+			'reason': ''
 		}, episodes))
 		pool.map_async(download_episode, enumerate(episodes))
 		pool.close()
@@ -322,6 +332,12 @@ if __name__ == '__main__':
 					pad.addstr(row, 14, '[')
 					pad.addstr(row, 15, '=' * bar_width)
 					pad.addstr(row, width - 2, ']')
+
+				# Failure reason.
+				if download['failed']:
+					row += 1
+					pad.addstr(row, 0, ' ' * width)
+					pad.addstr(row, 14, '[ ' + download['reason'] + ' ]')
 
 				# Blank line.
 				row += 1
