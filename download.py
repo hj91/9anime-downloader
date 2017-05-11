@@ -160,7 +160,7 @@ def get_mp4(episode):
 		return (preferred_found[0]['file'], preferred_found[0]['label'])
 	return (files[0]['file'], files[0]['label'])
 
-def download_episode(data, tries = 5):
+def download_episode(data, tries = 10):
 	(index, episode) = data
 
 	# Check if all tries have been used.
