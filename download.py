@@ -43,6 +43,15 @@ import random
 
 def cmp(a, b): return (a > b) - (a < b)
 
+def deobfuscate_token(js):
+	replacements = {}
+	for character in js:
+		if ord(character) > 127:
+			replacements[character] = 'u' + str(ord(character))
+	for character, replacement in replacements.items():
+		js = js.replace(character, replacement)
+	return js
+
 def initialize():
 	# Handle signals.
 	signal.signal(signal.SIGINT, signal.default_int_handler)
@@ -77,6 +86,10 @@ def initialize():
 	_browser = webdriver.Chrome()
 	_browser.get('http://9anime.to/token?v1')
 	tokenScript = _browser.find_element_by_tag_name('pre').text
+	tokenScript = deobfuscate_token(tokenScript)
+	with open('log', 'w') as log:
+		log.write(tokenScript)
+		log.flush()
 	_browser.execute_script(tokenScript)
 
 def stop():
